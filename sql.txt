@@ -1,0 +1,131 @@
+#
+# TABLE STRUCTURE FOR: USER
+#
+
+DROP TABLE IF EXISTS `USER`;
+
+CREATE TABLE `USER` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `nickname` varchar(50) COLLATE utf8_unicode_ci NOT NULL,
+  `password` varchar(50) COLLATE utf8_unicode_ci NOT NULL,
+  `email` varchar(50) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `isAdmin` tinyint(1) DEFAULT 0,
+  `sex` enum('Male','Female') COLLATE utf8_unicode_ci NOT NULL,
+  `country` varchar(25) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `first_name` varchar(25) COLLATE utf8_unicode_ci NOT NULL,
+  `middle_name` varchar(25) COLLATE utf8_unicode_ci NOT NULL,
+  `last_name` varchar(25) COLLATE utf8_unicode_ci NOT NULL,
+  `name` varchar(75) GENERATED ALWAYS AS (concat(`first_name`,`middle_name`,`last_name`)) VIRTUAL,
+  `birthday` date DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+
+
+
+#
+# TABLE STRUCTURE FOR: BOOK
+#
+
+DROP TABLE IF EXISTS `BOOK`;
+
+CREATE TABLE `BOOK` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `publish_date` date DEFAULT NULL,
+  `book_rate`  DECIMAL(2,1) DEFAULT 0,
+  `isbn` varchar(25) DEFAULT NULL,
+  `name` varchar(100) COLLATE utf8_unicode_ci NOT NULL,
+  `author` varchar(100) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `language` varchar(25) COLLATE utf8_unicode_ci NOT NULL,
+  `publisher` varchar(250) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `page_count` int(11) NOT NULL,
+   
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+
+
+#
+# TABLE STRUCTURE FOR: BOOK_RATE
+#
+
+DROP TABLE IF EXISTS `BOOK_RATE`;
+
+CREATE TABLE `BOOK_RATE` (
+  `book_id` int(10) unsigned NOT NULL,
+  `user_id` int(10) unsigned NOT NULL,
+  `point` int NOT NULL,
+  KEY `book_id` (`book_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `BOOK_RATE_ibfk_1` FOREIGN KEY (`book_id`) REFERENCES `BOOK` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `BOOK_RATE_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `USER` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TRIGGER rate AFTER INSERT ON book_rate FOR EACH ROW UPDATE book SET book_rate = (SELECT avg(point) FROM book_rate WHERE book_rate.book_id = book.id);
+CREATE TRIGGER rate2 AFTER UPDATE ON book_rate FOR EACH ROW UPDATE book SET book_rate = (SELECT avg(point) FROM book_rate WHERE book_rate.book_id = book.id);
+
+#
+# TABLE STRUCTURE FOR: COMMENT
+#
+
+DROP TABLE IF EXISTS `COMMENT`;
+
+CREATE TABLE `COMMENT` (
+  `book_id` int(10) unsigned NOT NULL,
+  `user_id` int(10) unsigned NOT NULL,
+  `comment_str` varchar(1000) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `isSpoiler` tinyint(1) DEFAULT 0,
+  `isCurse` tinyint(1) DEFAULT 0,
+  KEY `book_id` (`book_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `COMMENT_ibfk_1` FOREIGN KEY (`book_id`) REFERENCES `BOOK` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `COMMENT_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `USER` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+
+
+
+
+#
+# TABLE STRUCTURE FOR: USER_LIST
+#
+
+DROP TABLE IF EXISTS `USER_LIST`;
+
+CREATE TABLE `USER_LIST` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `list_name` varchar(50) COLLATE utf8_unicode_ci NOT NULL,
+  `user_id` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `USER_LIST_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `USER` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+
+
+#
+# TABLE STRUCTURE FOR: LIST_ELEMENTS
+#
+
+DROP TABLE IF EXISTS `LIST_ELEMENTS`;
+
+CREATE TABLE `LIST_ELEMENTS` (
+  `list_id` int(10) unsigned DEFAULT NULL,
+  `book_id` int(10) unsigned DEFAULT NULL,
+  KEY `book_id` (`book_id`),
+  KEY `list_id` (`list_id`),
+  CONSTRAINT `LIST_ELEMENTS_ibfk_1` FOREIGN KEY (`book_id`) REFERENCES `BOOK` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `LIST_ELEMENTS_ibfk_2` FOREIGN KEY (`list_id`) REFERENCES `USER_LIST` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE VIEW comview AS
+ SELECT
+    u.nickname,
+    u.id,
+    c.comment_str,
+    c.book_id
+FROM
+    user u, comment c
+WHERE
+    c.user_id = u.id;
+
